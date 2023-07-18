@@ -1,12 +1,24 @@
 # Labortatório sobre criptografia simétrica e assimétrica
 
+## Fractal
+
+![FRACTAL](./fractaljulia.bmp)
+
+### Observações
+
+#### 2- Compile usando
+
+```bash
+gcc fractal.c -o fractal -lm
+```
+
 ## DES
 
 ### Observações
 
 #### 1- Verifique se os arquivos des.c, des.h and run_des.c estão no mesmo diretório
 
-#### 2- Compile usando: 
+#### 2- Compile usando
 
     gcc -O3 des.c run_des.c -o run_des.o
 
