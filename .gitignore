@@ -1,2 +1,4 @@
 *.key
 *.bin
+.vscode
+*.bmp
