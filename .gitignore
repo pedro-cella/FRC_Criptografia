@@ -2,3 +2,6 @@
 *.bin
 .vscode
 *.bmp
+*.txt
+*.priv
+*.pub
