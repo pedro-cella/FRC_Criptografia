@@ -33,5 +33,6 @@ gcc fractal.c -o fractal -lm
 #### 3- Desecripte o arquivo usando:
     ./run_des.o -d keyfile.key arquivo.enc arquivo_decrypted.bmp
 
-
+gcc client.c des.c -O3 -o client.bin -lm -lcrypto && ./client.bin ../fractaljulia.bmp
+gcc server.c des.c -O3 -o server.bin -lm -lcrypto && ./server.bin
 ## RSA
