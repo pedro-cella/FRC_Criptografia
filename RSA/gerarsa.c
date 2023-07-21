@@ -9,7 +9,7 @@
 #define ACTION_GEN_KEYS "-k"
 
 #define MIN_DIGITS 10000  // Mínimo de cinco dígitos
-#define MAX_DIGITS 999999 // Máximo de seis dígitos
+#define MAX_DIGITS 99999 // Máximo de cinco dígitos
 
 bool is_prime(unsigned long long num) {
     if (num <= 1)
@@ -57,21 +57,17 @@ unsigned long long choose_e(unsigned long long z) {
     return e;
 }
 
-// Função para calcular d usando o algoritmo de exponenciação rápida
-unsigned long long compute_d(unsigned long long e, unsigned long long z) {
-    unsigned long long d = 1;
-    unsigned long long base = e;
-    unsigned long long exponent = z - 1;
 
-    while (exponent > 0) {
-        if (exponent & 1) {
-            d = (d * base) % z;
-        }
-        base = (base * base) % z;
-        exponent >>= 1;
-    }
+unsigned long long choose_d(unsigned long long e, unsigned long long z) {
+   unsigned long long d = 1;
 
-    return d;
+   while ((d * e) % z != 1) {
+    d++;
+   }
+
+   return d;
+   
+
 }
 
 unsigned long long main(int argc, char* argv[]) {
@@ -85,7 +81,6 @@ unsigned long long main(int argc, char* argv[]) {
 
     clock_t start, finish;
     double time_taken;
-
 
     if (strcmp(argv[1], ACTION_GEN_PRIMES) == 0) {
 
@@ -146,7 +141,7 @@ unsigned long long main(int argc, char* argv[]) {
 
         printf("[+] Computando D...\n");
         start = clock();
-        unsigned long long d = compute_d(e, z);
+        unsigned long long d = choose_d(e, z);
         finish = clock();
         time_taken = (double)(finish - start) / (double)CLOCKS_PER_SEC;
         printf("[+] D = %lld\n", d);

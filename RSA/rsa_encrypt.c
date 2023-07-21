@@ -3,22 +3,31 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-int mod_pow(int base, int exponent, int modulus) {
-    int result = 1;
-    base %= modulus;
-    while (exponent > 0) {
-        if (exponent & 1)
-            result = (result * base) % modulus;
-        exponent >>= 1;
-        base = (base * base) % modulus;
+
+unsigned long long ipow(unsigned long long base, unsigned long long exp)
+{
+    unsigned long long result = 1;
+    for (;;)
+    {
+        if (exp & 1)
+            result *= base;
+        exp >>= 1;
+        if (!exp)
+            break;
+        base *= base;
     }
+
     return result;
 }
 
-void encrypt_file(FILE *input_file, FILE *output_file, int e, int n) {
-    int byte;
+unsigned long long mod_pow(unsigned long long base, unsigned long long exponent, unsigned long long modulus) {
+    return ipow(base, exponent) % modulus;;
+}
+
+void encrypt_file(FILE *input_file, FILE *output_file, unsigned long long e, unsigned long long n) {
+    unsigned long long byte;
     while ((byte = fgetc(input_file)) != EOF) {
-        int encrypted_byte = mod_pow(byte, e, n);
+        unsigned long long encrypted_byte = mod_pow(byte, e, n);
         fputc(encrypted_byte, output_file);
     }
 }
@@ -42,17 +51,20 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    FILE *public_key_file = fopen("chave.pub", "r");
-    if (public_key_file == NULL) {
+    FILE *priv_key_file = fopen("generated_key.pub", "r");
+    if (priv_key_file == NULL) {
         printf("Erro ao abrir o arquivo da chave pública.\n");
         fclose(input_file);
         fclose(output_file);
         return 1;
     }
 
-    int n, e;
-    fscanf(public_key_file, "%d#%d", &n, &e);
-    fclose(public_key_file);
+    unsigned long long n, e;
+    fscanf(priv_key_file, "%lld@%lld", &n, &e);
+    fclose(priv_key_file);
+
+    printf("[+] N = %lld\n", n);
+    printf("[+] E = %lld\n", e);
 
     encrypt_file(input_file, output_file, e, n);
 
