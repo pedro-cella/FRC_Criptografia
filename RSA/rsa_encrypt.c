@@ -27,8 +27,12 @@ unsigned long long mod_pow(unsigned long long base, unsigned long long exponent,
 void encrypt_file(FILE *input_file, FILE *output_file, unsigned long long e, unsigned long long n) {
     unsigned long long byte;
     while ((byte = fgetc(input_file)) != EOF) {
+
+        printf("ORIGINAL - CHAR: %c, ASCII: %d\n", byte, byte);
         unsigned long long encrypted_byte = mod_pow(byte, e, n);
         fputc(encrypted_byte, output_file);
+        printf("ECNRYPTED - CHAR: %c, ASCII: %d\n\n", encrypted_byte, encrypted_byte);
+
     }
 }
 
@@ -60,11 +64,11 @@ int main(int argc, char *argv[]) {
     }
 
     unsigned long long n, e;
-    fscanf(priv_key_file, "%lld@%lld", &n, &e);
+    fscanf(priv_key_file, "%d@%d", &n, &e);
     fclose(priv_key_file);
 
-    printf("[+] N = %lld\n", n);
-    printf("[+] E = %lld\n", e);
+    printf("[+] N = %d\n", n);
+    printf("[+] E = %d\n", e);
 
     encrypt_file(input_file, output_file, e, n);
 

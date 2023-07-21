@@ -58,11 +58,11 @@ unsigned long long main(unsigned long long argc, char *argv[]) {
     }
 
     unsigned long long n, d;
-    fscanf(public_key_file, "%lld@%lld", &n, &d);
+    fscanf(public_key_file, "%d@%d", &n, &d);
     fclose(public_key_file);
 
-    printf("[+] N = %lld\n", n);
-    printf("[+] D = %lld\n", d);
+    printf("[+] N = %d\n", n);
+    printf("[+] D = %d\n", d);
 
     decrypt_file(input_file, output_file, d, n);
 
