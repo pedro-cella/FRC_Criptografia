@@ -34,5 +34,15 @@ gcc fractal.c -o fractal -lm
     ./run_des.o -d keyfile.key arquivo.enc arquivo_decrypted.bmp
 
 gcc client.c des.c -O3 -o client.bin -lm -lcrypto && ./client.bin ../fractaljulia.bmp
+
 gcc server.c des.c -O3 -o server.bin -lm -lcrypto && ./server.bin
+
+
+gcc gerarsa.c -lssl -lcrypto -o gerarsa.bin -O3 && ./gerarsa.bin -p
+
+gcc gerarsa.c -lssl -lcrypto -o gerarsa.bin -O3 && ./gerarsa.bin -k ./primos.txt
+
+gcc rsa_encrypt.c -lssl -lcrypto -o encrypt.bin -O3 && ./encrypt.bin ../fractaljulia.bmp
+
+gcc rsa_decrypt.c -lssl -lcrypto -o decrypt.bin -O3 && ./decrypt.bin
 ## RSA

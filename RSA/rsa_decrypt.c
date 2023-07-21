@@ -1,75 +1,180 @@
 #include <stdio.h>
-#include <stdbool.h>
 #include <stdlib.h>
-#include <stdint.h>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
 
-unsigned long long ipow(unsigned long long base, unsigned long long exp)
-{
-    unsigned long long result = 1;
-    for (;;)
-    {
-        if (exp & 1)
-            result *= base;
-        exp >>= 1;
-        if (!exp)
-            break;
-        base *= base;
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <openssl/des.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+#define RSA_KEY_SIZE 4096
+#define CHUNK_SIZE 256
+
+#define SERVER_PORT 25569  // Replace this with the server's port
+
+char* decrypt(char* chave_priv_filename){
+    
+    // Initialize OpenSSL
+    ERR_load_crypto_strings();
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG, NULL);
+    OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS, NULL);
+
+    // Load the private key from the .pem file
+    FILE *private_key_file = fopen(chave_priv_filename, "rb");
+    if (private_key_file == NULL) {
+        perror("Error opening private_key.pem");
+        return 1;
     }
 
-    return result;
+    RSA *rsa_keypair = RSA_new();
+    if (rsa_keypair == NULL) {
+        perror("Error creating RSA structure");
+        fclose(private_key_file);
+        return 1;
+    }
+
+    rsa_keypair = PEM_read_RSAPrivateKey(private_key_file, NULL, NULL, NULL);
+    fclose(private_key_file);
+
+    if (rsa_keypair == NULL) {
+        perror("Error reading private key from file");
+        return 1;
+    }
+
+    // Read the encrypted file
+    FILE *encrypted_file = fopen("encrypted_output.dat", "rb");
+    if (encrypted_file == NULL) {
+        perror("Error opening encrypted_output.dat");
+        RSA_free(rsa_keypair);
+        return 1;
+    }
+
+    // Create the output file for the decrypted data (e.g., .bmp)
+    FILE *decrypted_file = fopen("decrypted_output.bmp", "wb");
+    if (decrypted_file == NULL) {
+        perror("Error creating decrypted_output.bmp");
+        fclose(encrypted_file);
+        RSA_free(rsa_keypair);
+        return 1;
+    }
+
+    unsigned char ciphertext[RSA_size(rsa_keypair)];
+    unsigned char decrypted[CHUNK_SIZE];
+
+    int bytes_read, decrypted_len;
+    while ((bytes_read = fread(ciphertext, sizeof(unsigned char), RSA_size(rsa_keypair), encrypted_file)) > 0) {
+        decrypted_len = RSA_private_decrypt(bytes_read, ciphertext, decrypted, rsa_keypair, RSA_PKCS1_PADDING);
+        if (decrypted_len == -1) {
+            perror("Error decrypting data");
+            fclose(encrypted_file);
+            fclose(decrypted_file);
+            RSA_free(rsa_keypair);
+            return 1;
+        }
+        fwrite(decrypted, sizeof(unsigned char), decrypted_len, decrypted_file);
+    }
+
+    // Close the files
+    fclose(encrypted_file);
+    fclose(decrypted_file);
+
+    RSA_free(rsa_keypair);
+
+    // Clean up OpenSSL
+    OPENSSL_cleanup();
+    ERR_free_strings();
+
+    return "decrypted_output.bmp";
+
 }
 
-unsigned long long mod_pow(unsigned long long base, unsigned long long exponent, unsigned long long modulus) {
-    return ipow(base, exponent) % modulus;;
+
+int send_key(int client_fd, char* chave_pub_filename){
+
+    ssize_t bytes_received;
+
+    FILE* chave_pub_file = fopen(chave_pub_filename, "rb");
+    printf("[+] Readed file: %s\n", chave_pub_filename);
+
+    fseek(chave_pub_file, 0, SEEK_END);
+    long file_size = ftell(chave_pub_file);
+    rewind(chave_pub_file);
+
+    char* key_len = (char*)malloc(sizeof(char) * 5);
+    bzero(key_len, sizeof(char) * 5);
+
+    snprintf(key_len, 5, "%lld",file_size);
+
+    printf("[+] Key len: %s\n", key_len);
+
+    printf("%d\n", strlen(key_len));
+
+    send(client_fd, key_len, strlen(key_len), 0);
+    char* recived = (char*)malloc(sizeof(char) * 5);;
+    bzero(recived, 5);
+    bytes_received = read(client_fd, recived, 5);
+
+    printf("%s\n", recived);
+
+
+    char* pub_file_buffer = (char*)malloc(sizeof(char) * file_size);
+    fread(pub_file_buffer, sizeof(char), file_size, chave_pub_file);
+
+    send(client_fd, pub_file_buffer, sizeof(char) * file_size, 0);
+
 }
-void decrypt_file(FILE *input_file, FILE *output_file, unsigned long long d, unsigned long long n) {
-    unsigned long long byte;
-    while ((byte = fgetc(input_file)) != EOF) {
-        unsigned long long decrypted_byte = mod_pow(byte, d, n);
-        fputc(decrypted_byte, output_file);
-    }
-}
 
-unsigned long long main(unsigned long long argc, char *argv[]) {
-    if (argc != 2) {
-        printf("Uso: %s arquivo_encriptado\n", argv[0]);
-        return 1;
-    }
+int main() {
 
-    FILE *input_file = fopen(argv[1], "rb");
-    if (input_file == NULL) {
-        printf("Erro ao abrir o arquivo de entrada.\n");
-        return 1;
-    }
+      // Pre-shared key (PSK) for both client and server (must be 8 bytes long for
+  // DES) Create a TCP socket
+  int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (server_fd == -1) {
+    printf("Error creating socket\n");
+    return -1;
+  }
 
-    FILE *output_file = fopen("arquivo_desencriptado.bmp", "wb");
-    if (output_file == NULL) {
-        printf("Erro ao abrir o arquivo de saída.\n");
-        fclose(input_file);
-        return 1;
-    }
+  // Set up the server address
+  struct sockaddr_in server_addr;
+  memset(&server_addr, 0, sizeof(server_addr));
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_addr.s_addr = INADDR_ANY;
+  server_addr.sin_port = htons(SERVER_PORT);
 
-    FILE *public_key_file = fopen("generated_key.priv", "r");
-    if (public_key_file == NULL) {
-        printf("Erro ao abrir o arquivo da chave privada.\n");
-        fclose(input_file);
-        fclose(output_file);
-        return 1;
-    }
+  // Bind the socket to the specified port
+  if (bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) <
+      0) {
+    printf("Binding failed\n");
+    close(server_fd);
+    return -1;
+  }
 
-    unsigned long long n, d;
-    fscanf(public_key_file, "%d@%d", &n, &d);
-    fclose(public_key_file);
+  // Listen for incoming connections
+  if (listen(server_fd, 1) < 0) {
+    printf("Listening failed\n");
+    close(server_fd);
+    return -1;
+  }
 
-    printf("[+] N = %d\n", n);
-    printf("[+] D = %d\n", d);
+  // Accept the incoming connection
+  struct sockaddr_in client_addr;
+  socklen_t client_len = sizeof(client_addr);
+  int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
+  if (client_fd < 0) {
+    printf("Acceptance failed\n");
+    close(server_fd);
+    return -1;
+  }
 
-    decrypt_file(input_file, output_file, d, n);
+    send_key(client_fd, "chave.pub");
 
-    fclose(input_file);
-    fclose(output_file);
 
-    printf("Arquivo desencriptado com sucesso.\n");
+
 
     return 0;
 }
+// Enviar tamanho do arquivo dps o arquivo.
