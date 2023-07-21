@@ -38,6 +38,8 @@ gcc client.c des.c -O3 -o client.bin -lm -lcrypto && ./client.bin ../fractaljuli
 gcc server.c des.c -O3 -o server.bin -lm -lcrypto && ./server.bin
 
 
+sudo apt-get install libssl-dev
+
 gcc gerarsa.c -lssl -lcrypto -o gerarsa.bin -O3 && ./gerarsa.bin -p
 
 gcc gerarsa.c -lssl -lcrypto -o gerarsa.bin -O3 && ./gerarsa.bin -k ./primos.txt
