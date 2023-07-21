@@ -7,13 +7,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-/*
- * des.h provides the following functions and constants:
- *
- * generate_key, generate_sub_keys, process_message, ENCRYPTION_MODE,
- * DECRYPTION_MODE
- *
- */
 #include "des.h"
 
 // Declare action parameters
@@ -24,7 +17,7 @@
 // DES key is 8 bytes long
 #define DES_KEY_SIZE 8
 
-#define SERVER_PORT 25569  // Replace this with the server's port
+#define SERVER_PORT 25569  // Mude esse define para definir a porta do servidor.
 
 int decrypt(char* des_key, char* filename) {
   FILE* encrypted_file = fopen(filename, "rb");
